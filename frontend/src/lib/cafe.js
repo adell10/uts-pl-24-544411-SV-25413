@@ -27,8 +27,14 @@ export const STATUS_LABELS = {
   wishlist: 'Mau dicoba',
 }
 
-export const priceText = (level) => Array.from({ length: level || 1 }, () => 'Rp').join(' ')
+// Kisaran harga per orang
+export const PRICE_LABELS = {
+  1: '< 25rb',
+  2: '25–50rb',
+  3: '> 50rb',
+}
 
+export const priceText = (level) => PRICE_LABELS[level] ?? PRICE_LABELS[2]
 export function formatDate(value) {
   if (!value) return '-'
   return new Date(`${value}T00:00:00`).toLocaleDateString('id-ID', {
