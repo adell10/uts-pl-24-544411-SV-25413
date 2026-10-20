@@ -1,0 +1,7 @@
+# jangan pernah di-commit
+.env
+.env.prod
+
+.DS_Store
+.vscode/
+.idea/
