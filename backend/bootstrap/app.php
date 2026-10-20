@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Di belakang Nginx/Docker, percayai header X-Forwarded-*
         $middleware->trustProxies(at: '*');
+
+        // Request API tanpa token → jangan redirect ke halaman login web (balas 401 JSON)
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Semua error di /api/* selalu dibalas JSON
