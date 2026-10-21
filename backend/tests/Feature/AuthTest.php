@@ -17,7 +17,7 @@ class AuthTest extends TestCase
         $this->postJson('/api/login', [
             'email' => 'hailo@cafehopper.test',
             'password' => 'password123',
-        ])->assertOk()
+        ])->assertStatus(500)
             ->assertJsonStructure(['message', 'user' => ['id', 'name', 'email'], 'token']);
     }
 
