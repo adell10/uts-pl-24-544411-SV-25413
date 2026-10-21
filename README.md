@@ -1,8 +1,8 @@
-# Cafe Hopper ☕
+# Cafe Hopper 
 
 Aplikasi catatan *cafe hopping*: simpan kafe yang sudah atau mau didatangi, lengkap dengan rating, harga, fasilitas, dan cocok tidaknya untuk nugas.
 
-UTS Konstruksi dan Evolusi Perangkat Lunak — Hailo (24/544411/SV/25413, B2)
+UTS Konstruksi dan Evolusi Perangkat Lunak — (24/544411/SV/25413, B2)
 
 ## Teknologi
 | Bagian | Teknologi |
