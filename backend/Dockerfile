@@ -1,6 +1,6 @@
 # Laravel + FrankenPHP (pengganti php artisan serve / PHP-FPM + Nginx)
 # Versi image ditulis jelas, bukan "latest".
-FROM dunglas/frankenphp:1.13.1-php8.4
+FROM dunglas/frankenphp:1.13.5-php8.4.27
 
 # Ekstensi PHP yang dibutuhkan Laravel + MySQL
 RUN install-php-extensions pdo_mysql zip intl opcache pcntl
