@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Models\Cafe;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 /**
@@ -54,5 +56,23 @@ class CafeRequest extends FormRequest
             'last_visited_at.before_or_equal' => 'Tanggal mampir tidak boleh di masa depan.',
             'color.in' => 'Warna kartu tidak tersedia.',
         ];
+    }
+
+    /**
+     * Validasi gagal → catat log warning, lalu lanjutkan balasan 422 seperti biasa.
+     * Yang dicatat hanya NAMA field yang salah, bukan nilai yang dikirim user.
+     */
+    protected function failedValidation(Validator $validator): void
+    {
+        Log::warning('Validasi data kafe gagal', [
+            'event' => 'cafe.validation_failed',
+            'actor' => 'user:'.$this->user()?->id,
+            'action' => $this->isMethod('post') ? 'menambah kafe' : 'mengubah kafe',
+            'endpoint' => $this->method().' /api/cafes'.($this->route('cafe') ? '/{id}' : ''),
+            'invalid_fields' => array_keys($validator->errors()->toArray()),
+            'reason' => 'input tidak lolos aturan validasi',
+        ]);
+
+        parent::failedValidation($validator);
     }
 }

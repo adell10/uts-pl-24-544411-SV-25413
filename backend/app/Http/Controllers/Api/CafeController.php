@@ -9,6 +9,7 @@ use App\Models\Cafe;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Log;
 
 class CafeController extends Controller
 {
@@ -40,9 +41,20 @@ class CafeController extends Controller
     /** POST /api/cafes → 201 */
     public function store(CafeRequest $request): JsonResponse
     {
-        $cafe = $request->user()->cafes()->create($request->validated());
+        $cafe = $request->user()->cafes()->create($request->validated())->refresh();
 
-        return (new CafeResource($cafe->refresh()))
+        // Hanya ID & status — tidak mencatat nama, catatan, atau data pribadi
+        Log::info('Kafe berhasil disimpan', [
+            'event' => 'cafe.created',
+            'actor' => 'user:'.$request->user()->id,
+            'action' => 'menambah kafe',
+            'endpoint' => 'POST /api/cafes',
+            'cafe_id' => $cafe->id,
+            'cafe_status' => $cafe->status,
+            'reason' => 'data kafe lolos validasi dan tersimpan',
+        ]);
+
+        return (new CafeResource($cafe))
             ->additional(['message' => 'Kafe tersimpan.'])
             ->response()
             ->setStatusCode(201);
@@ -60,13 +72,34 @@ class CafeController extends Controller
         $cafe = $request->user()->cafes()->findOrFail($id);
         $cafe->update($request->validated());
 
+        // Yang dicatat hanya NAMA field yang berubah, bukan isinya
+        Log::info('Kafe berhasil diperbarui', [
+            'event' => 'cafe.updated',
+            'actor' => 'user:'.$request->user()->id,
+            'action' => 'mengubah kafe',
+            'endpoint' => 'PUT /api/cafes/{id}',
+            'cafe_id' => $cafe->id,
+            'changed_fields' => array_values(array_diff(array_keys($cafe->getChanges()), ['updated_at'])),
+            'reason' => 'data perubahan lolos validasi dan tersimpan',
+        ]);
+
         return (new CafeResource($cafe->refresh()))->additional(['message' => 'Kafe diperbarui.']);
     }
 
     /** DELETE /api/cafes/{id} → 200 */
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $request->user()->cafes()->findOrFail($id)->delete();
+        $cafe = $request->user()->cafes()->findOrFail($id);
+        $cafe->delete();
+
+        Log::info('Kafe berhasil dihapus', [
+            'event' => 'cafe.deleted',
+            'actor' => 'user:'.$request->user()->id,
+            'action' => 'menghapus kafe',
+            'endpoint' => 'DELETE /api/cafes/{id}',
+            'cafe_id' => $cafe->id,
+            'reason' => 'user meminta penghapusan kafe miliknya',
+        ]);
 
         return response()->json(['message' => 'Kafe dihapus.']);
     }

@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -17,8 +18,25 @@ class AuthController extends Controller
         $user = User::where('email', $request->input('email'))->first();
 
         if (! $user || ! Hash::check($request->input('password'), $user->password)) {
+            // TIDAK mencatat email, password, atau IP
+            Log::warning('Login gagal', [
+                'event' => 'auth.login_failed',
+                'actor' => 'guest',
+                'action' => 'masuk ke aplikasi',
+                'endpoint' => 'POST /api/login',
+                'reason' => 'email atau password tidak cocok',
+            ]);
+
             return response()->json(['message' => 'Email atau password salah.'], 401);
         }
+
+        Log::info('Login berhasil', [
+            'event' => 'auth.login_succeeded',
+            'actor' => 'user:'.$user->id,
+            'action' => 'masuk ke aplikasi',
+            'endpoint' => 'POST /api/login',
+            'reason' => 'kredensial valid, token baru dibuat',
+        ]);
 
         return response()->json([
             'message' => 'Berhasil masuk.',
