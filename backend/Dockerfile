@@ -28,7 +28,7 @@ RUN composer dump-autoload --optimize --no-dev \
 # Tidak ada nilai rahasia di sini: APP_KEY, DB_PASSWORD, dll. dikirim lewat environment saat container jalan.
 ENV APP_ENV=production \
     APP_DEBUG=false \
-    LOG_CHANNEL=stderr
+    LOG_CHANNEL=stdout
 
 EXPOSE 8000
 

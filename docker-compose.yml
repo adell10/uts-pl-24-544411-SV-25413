@@ -1,6 +1,14 @@
 # Jalankan seluruh sistem:  docker compose up -d --build
 # Kredensial dibaca dari file .env (TIDAK di-commit). Contohnya ada di .env.example.
 
+# Pengaturan log Docker yang dipakai semua service:
+# tiap container maksimal 3 file x 10 MB, file lama diputar (rotate) otomatis.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: mysql:8.4
@@ -17,6 +25,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+      start_period: 20s
+    logging: *default-logging
 
   backend:
     build: ./backend
@@ -28,7 +38,8 @@ services:
       APP_DEBUG: "false"
       APP_KEY: ${APP_KEY}
       APP_URL: http://localhost:8080
-      LOG_CHANNEL: stderr
+      LOG_CHANNEL: stdout               # log Laravel → stdout container (dibaca docker compose logs)
+      LOG_LEVEL: info
       DB_CONNECTION: mysql
       DB_HOST: db                       # nama service, bukan IP
       DB_PORT: 3306
@@ -42,6 +53,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      # /health memeriksa basis data + cache; curl -f gagal kalau balasan 503
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:8000/health"]
+      interval: 10s                     # cek tiap 10 detik
+      timeout: 5s                       # 1 cek dianggap gagal kalau > 5 detik
+      retries: 3                        # 3x gagal berturut-turut → unhealthy
+      start_period: 40s                 # beri waktu migrate + seed saat container baru nyala
+    logging: *default-logging
     ports:
       - "8000:8000"                     # opsional: untuk tes langsung pakai Postman
 
@@ -53,7 +72,9 @@ services:
     image: ${FRONTEND_IMAGE:-cafehopper-frontend:local}
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    logging: *default-logging
     ports:
       - "8080:80"                       # buka http://localhost:8080 di browser
 
