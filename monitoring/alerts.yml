@@ -1,0 +1,14 @@
+groups:
+  - name: cafe-hopper
+    rules:
+      - alert: BackendCafeHopperMati
+        # up = 0 artinya Prometheus gagal menarik /metrics dari backend
+        expr: up{job="aplikasi"} == 0
+        # harus bertahan 1 menit dulu → satu kedipan jaringan tidak membangunkan orang
+        for: 1m
+        labels:
+          severity: kritis
+        annotations:
+          summary: "Backend Cafe Hopper mati / tidak bisa dihubungi"
+          description: "Target {{ $labels.instance }} (job {{ $labels.job }}) DOWN lebih dari 1 menit. Pengguna tidak bisa login maupun membuka daftar kafe."
+          action: "Tindakan pertama: jalankan 'docker compose ps backend' lalu 'docker compose logs backend --tail 50' untuk melihat sebabnya. Jika container berhenti, nyalakan dengan 'docker compose start backend', lalu pastikan http://localhost:8000/health membalas 200."
