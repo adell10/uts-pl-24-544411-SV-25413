@@ -3,7 +3,7 @@
 FROM dunglas/frankenphp:1.13.5-php8.4.27
 
 # Ekstensi PHP yang dibutuhkan Laravel + MySQL
-RUN install-php-extensions pdo_mysql zip intl opcache pcntl
+RUN install-php-extensions pdo_mysql zip intl opcache pcntl apcu
 
 # Composer diambil dari image resmi (versi jelas)
 COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer

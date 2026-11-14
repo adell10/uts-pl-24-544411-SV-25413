@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\MetricsController;
+use App\Http\Middleware\RecordMetrics;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
@@ -20,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // /health didaftarkan di luar grup "web" → tanpa session/cookie
         then: function () {
             Route::get('/health', HealthController::class)->name('health');
+            // /metrics ditarik Prometheus tiap 15 detik (format teks Prometheus)
+            Route::get('/metrics', MetricsController::class)->name('metrics');
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -28,6 +32,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Request API tanpa token → jangan redirect ke halaman login web (balas 401 JSON)
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
+
+        // Catat setiap request ke metrik Prometheus (jumlah request + lama request)
+        $middleware->append(RecordMetrics::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Semua error di /api/* selalu dibalas JSON
