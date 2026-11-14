@@ -120,6 +120,7 @@ jobs:
             echo "DB_PASSWORD=${DB_PASSWORD}"
             echo "DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}"
             echo "SEED_ON_START=true"
+            echo "GRAFANA_ADMIN_PASSWORD=$(openssl rand -hex 16)"
           } > .env
 
       - name: Jalankan image yang baru di-push (smoke test)
