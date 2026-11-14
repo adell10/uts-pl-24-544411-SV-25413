@@ -1,4 +1,4 @@
-# Jalankan seluruh sistem:  docker compose up -d --build
+# Jalankan seluruh sistem (aplikasi + pemantauan):  docker compose up -d --build
 # Kredensial dibaca dari file .env (TIDAK di-commit). Contohnya ada di .env.example.
 
 # Pengaturan log Docker yang dipakai semua service:
@@ -10,6 +10,7 @@ x-logging: &default-logging
     max-file: "3"
 
 services:
+  # ======================= APLIKASI =======================
   db:
     image: mysql:8.4
     restart: unless-stopped
@@ -62,7 +63,7 @@ services:
       start_period: 40s                 # beri waktu migrate + seed saat container baru nyala
     logging: *default-logging
     ports:
-      - "8000:8000"                     # opsional: untuk tes langsung pakai Postman
+      - "127.0.0.1:8000:8000"           # hanya bisa dibuka dari laptop sendiri (ada /metrics di sini)
 
   frontend:
     build:
@@ -78,5 +79,63 @@ services:
     ports:
       - "8080:80"                       # buka http://localhost:8080 di browser
 
+  # ======================= PEMANTAUAN =======================
+  prometheus:                           # menarik & menyimpan angka, menilai aturan alarm
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prom_data:/prometheus           # riwayat metrik tidak hilang saat container diganti
+    depends_on:
+      - cadvisor
+      - node-exporter
+    logging: *default-logging
+    ports:
+      - "127.0.0.1:9090:9090"           # hanya dari laptop sendiri, tidak terbuka ke jaringan
+
+  grafana:                              # menggambar dashboard dari Prometheus
+    image: grafana/grafana:12.1.1
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Isi GRAFANA_ADMIN_PASSWORD di file .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"   # tidak ada pendaftaran akun dari halaman login
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro   # data source + dashboard dari file
+    depends_on:
+      - prometheus
+    logging: *default-logging
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  cadvisor:                             # CPU & memori tiap container
+    image: ghcr.io/google/cadvisor:v0.60.5
+    restart: unless-stopped
+    privileged: true
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=15s
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    logging: *default-logging
+
+  node-exporter:                        # CPU, RAM, disk mesin Docker
+    image: prom/node-exporter:v1.9.1
+    restart: unless-stopped
+    logging: *default-logging
+
 volumes:
   db_data:
+  prom_data:
+  grafana_data:

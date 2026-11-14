@@ -1,0 +1,9 @@
+# Semua file .json di folder ini dimuat sebagai dashboard saat Grafana menyala
+apiVersion: 1
+providers:
+  - name: cafe-hopper
+    folder: Cafe Hopper
+    type: file
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
